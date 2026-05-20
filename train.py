@@ -1,9 +1,3 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.10
-# A/B 统一训练入口
-# --model_type A → PureResUNet（基线）
-# --model_type B → DegFiLM-ResUNet（退化感知 FiLM）
-
 import os
 import sys
 import time
@@ -26,22 +20,17 @@ from utils import EarlyStopping, calc_psnr, set_high_priority, disable_quick_edi
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='A/B 统一训练入口')
+    parser = argparse.ArgumentParser(description='A/B 统一训练')
     parser.add_argument('-m', '--model_type', type=str, default=None,
-                        choices=['A', 'B'],
-                        help='网络方案: A=PureResUNet(基线), B=DegFiLMResUNet(退化感知FiLM)')
-    parser.add_argument('--base_ch', type=int, default=None, help='基础通道数 (默认 32)')
-    parser.add_argument('--batch_size', type=int, default=None, help='训练 batch size')
-    parser.add_argument('--epochs', type=int, default=None, help='训练 epoch 数')
-    parser.add_argument('--lr', type=float, default=None, help='学习率')
-    parser.add_argument('--resume', type=str, default=None,
-                        help='从指定 checkpoint 恢复训练')
-    parser.add_argument('--eval_only', action='store_true',
-                        help='仅评估模式，不训练')
-    parser.add_argument('--checkpoint', type=str, default=None,
-                        help='评估时加载的模型路径')
-    parser.add_argument('--unseen_qp', type=int, nargs='+', default=None,
-                        help='评估时额外测试的 QP 列表，如 25 30 35 40')
+                        choices=['A', 'B'])
+    parser.add_argument('--base_ch', type=int, default=None)
+    parser.add_argument('--batch_size', type=int, default=None)
+    parser.add_argument('--epochs', type=int, default=None)
+    parser.add_argument('--lr', type=float, default=None)
+    parser.add_argument('--resume', type=str, default=None)
+    parser.add_argument('--eval_only', action='store_true')
+    parser.add_argument('--checkpoint', type=str, default=None)
+    parser.add_argument('--unseen_qp', type=int, nargs='+', default=None)
     return parser.parse_args()
 
 
@@ -68,6 +57,7 @@ def set_seed(seed=42):
     torch.cuda.manual_seed_all(seed)
 
 
+# A方案 PureResUNet，B方案 DegFiLMResUNet
 def build_model(cfg):
     model_type = cfg.get('model_type', 'A')
     if model_type == 'A':
@@ -78,8 +68,10 @@ def build_model(cfg):
         raise ValueError(f'Unknown model_type: {model_type}')
 
 
+# 看看是否改了batch_size，我这里验证一下config
+print(f"[DEBUG] loading config, model_type={CONFIG.get('model_type', 'A')}")
+
 def build_dataloader_for_split(cfg, split):
-    # A/B 选不同的数据流：B 训练时用多 QP 分层采样，其余和 A 一样
     model_type = cfg.get('model_type', 'A')
     is_train = (split == 'train')
     if model_type == 'B':
@@ -130,7 +122,7 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, scaler, device, cfg, 
     grad_norm = 0.0
     pbar = tqdm(dataloader, desc='Train', leave=False)
 
-    accum_steps = cfg.get('grad_accum_steps', 1)
+    accum_steps = cfg.get('grad_accum_steps', 1)  # 梯度累积，显存不够时相当于大batch_size
     optimizer.zero_grad()
 
     track_qp = (cfg.get('model_type') == 'B')
@@ -147,7 +139,7 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, scaler, device, cfg, 
             with autocast('cuda'):
                 pred = model(lq)
                 if cfg.get('pred_clamp', False):
-                    pred = torch.clamp(pred, 0.0, 1.0)
+                    pred = torch.clamp(pred, 0.0, 1.0)  # 先clamp再算loss，不然模型可能输出负数或>1
                 loss, l1_val, ssim_loss_val, ssim_val = loss_fn(pred, hq, return_components=True)
                 loss = loss / accum_steps
         else:
@@ -169,7 +161,7 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, scaler, device, cfg, 
             if cfg['amp']:
                 if cfg.get('clip_grad_norm', None):
                     scaler.unscale_(optimizer)
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), cfg['clip_grad_norm'])
+                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), cfg['clip_grad_norm'])  # 梯度裁剪防爆炸，1.0够用
                 scaler.step(optimizer)
                 scaler.update()
             else:
@@ -213,7 +205,7 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, scaler, device, cfg, 
     return total_loss / n, float(grad_norm), total_l1 / n, total_ssim / n, total_psnr / n
 
 
-def _pad_to_multiple(x, multiple=16):
+def _pad_to_multiple(x, multiple=16):  # 下采样4次，特征图尺寸要能被16整除
     _, _, h, w = x.shape
     pad_h = (multiple - h % multiple) % multiple
     pad_w = (multiple - w % multiple) % multiple
@@ -239,7 +231,7 @@ def validate(model, dataloader, device, cfg, loss_fn, desc='Val'):
         hq = batch[1].to(device)
         _, _, h, w = lq.shape
 
-        use_tile = (h > 720 or w > 1280)
+        use_tile = (h > 720 or w > 1280)  # 大图用tile，小图直接整帧推
 
         if use_tile:
             pred = tile_predict(model, lq, tile_size=cfg['patch_size'], stride=cfg['patch_size'] // 2)
@@ -250,7 +242,7 @@ def validate(model, dataloader, device, cfg, loss_fn, desc='Val'):
             except RuntimeError as e:
                 if 'out of memory' in str(e).lower():
                     torch.cuda.empty_cache()
-                    pred = tile_predict(model, lq, tile_size=cfg['patch_size'], stride=cfg['patch_size'] // 2)
+                    pred = tile_predict(model, lq, tile_size=cfg['patch_size'], stride=cfg['patch_size'] // 2)  # 保险起见，万一哪张图特别大
                     loss, _, _, ssim_val = loss_fn(pred.clamp(0, 1), hq, return_components=True)
                     total_psnr += float(calc_psnr(pred.clamp(0, 1), hq))
                     total_ssim += ssim_val
@@ -321,7 +313,6 @@ def main():
     set_seed(cfg['seed'])
     set_high_priority()
 
-    # 实验目录
     if args.resume:
         exp_dir = os.path.dirname(os.path.dirname(os.path.abspath(args.resume)))
         if not os.path.exists(exp_dir):
@@ -338,16 +329,14 @@ def main():
         os.makedirs(exp_dir, exist_ok=True)
     os.makedirs(os.path.join(exp_dir, 'checkpoints'), exist_ok=True)
 
-    # 保存配置
     with open(os.path.join(exp_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(cfg, f, indent=2, ensure_ascii=False)
 
     logger = setup_logger(exp_dir)
 
     device = torch.device(cfg['device'] if torch.cuda.is_available() else 'cpu')
-    logger.info(f"开始训练方案: {cfg['model_type']}")
+    logger.info(f"开始训练 方案: {cfg['model_type']}")
     logger.info(f'实验目录: {exp_dir}')
-    logger.info(f'配置: {cfg}')
     logger.info(f'设备: {device}')
 
     if torch.cuda.is_available():
@@ -356,7 +345,6 @@ def main():
         logger.info(f'GPU: {torch.cuda.get_device_name(0)}')
         logger.info(f'显存: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')
 
-    # 模型
     model = build_model(cfg)
     model = model.to(device)
     n_params = count_parameters(model)
@@ -370,7 +358,6 @@ def main():
         pct = film_params / base_params * 100
         logger.info(f'  - 相对 A 方案基线 ({base_params / 1e6:.2f}M) 增加: {pct:.2f}%')
 
-    # torch.compile (PyTorch 2.x)
     if hasattr(torch, 'compile'):
         try:
             import importlib.util
@@ -383,38 +370,32 @@ def main():
         except Exception as e:
             logger.info(f'torch.compile failed: {e}, fallback to eager mode')
 
-    # 损失函数
     loss_fn = L1SSIMLoss(
         l1_weight=cfg['l1_weight'],
         ssim_weight=cfg['ssim_weight']
     )
     loss_fn = loss_fn.to(device)
 
-    # 优化器 + 调度器
     optimizer, scheduler = build_optimizer_scheduler(model, cfg)
-    logger.info(f"优化器: {cfg['optimizer']}, lr={cfg['lr']}, scheduler={cfg.get('scheduler', 'None')}")
+    logger.info(f"优化器: {cfg['optimizer']}, lr={cfg['lr']}")
 
-    # 数据流
     train_loader = build_dataloader_for_split(cfg, 'train')
     val_loader = build_dataloader_for_split(cfg, 'val')
     logger.info(f'Train batches: {len(train_loader)}, Val sequences: {len(val_loader)}')
 
-    # 早停
     early_stopper = EarlyStopping(
         patience=cfg['early_stop_patience'],
         min_delta=cfg['early_stop_min_delta'],
         mode=cfg['early_stop_mode']
     )
-    logger.info(f"早停 patience={cfg['early_stop_patience']}, min_delta={cfg['early_stop_min_delta']}, mode={cfg['early_stop_mode']}")
 
-    # 恢复训练 / 仅评估
     start_epoch = 1
     best_psnr = -1.0
     val_qp = cfg.get('qp', 32)
 
     if args.eval_only:
         if not args.checkpoint or not os.path.exists(args.checkpoint):
-            raise FileNotFoundError(f'评估模式需要提供有效的 checkpoint 路径: {args.checkpoint}')
+            raise FileNotFoundError(f'评估模式需要提供 checkpoint: {args.checkpoint}')
         checkpoint = torch.load(args.checkpoint, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         logger.info(f'加载模型: {args.checkpoint}')
@@ -440,20 +421,20 @@ def main():
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
         best_psnr = checkpoint.get('best_psnr', -1.0)
-        logger.info(f'从 checkpoint 恢复: {args.resume}')
-        logger.info(f'恢复 epoch {start_epoch - 1}, best_psnr: {best_psnr:.4f}')
+        logger.info(f'从 checkpoint 恢复: {args.resume}, epoch {start_epoch - 1}, best_psnr: {best_psnr:.4f}')
 
-    # 训练循环
     scaler = GradScaler('cuda') if cfg['amp'] else None
 
     import csv
     csv_path = os.path.join(exp_dir, 'training_metrics.csv')
     if args.resume and os.path.exists(csv_path):
-        logger.info(f'继续写入已有 CSV: {csv_path}')
+        logger.info(f'继续写入 CSV: {csv_path}')
     else:
         with open(csv_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(['epoch', 'train_loss', 'train_l1', 'train_ssim', 'train_psnr', 'grad_norm', 'val_psnr', 'val_ssim', 'val_loss', 'test_psnr', 'test_ssim', 'test_loss', 'lr'])
+            writer.writerow(['epoch', 'train_loss', 'train_l1', 'train_ssim', 'train_psnr',
+                           'grad_norm', 'val_psnr', 'val_ssim', 'val_loss',
+                           'test_psnr', 'test_ssim', 'test_loss', 'lr'])
 
     for epoch in range(start_epoch, cfg['epochs'] + 1):
         epoch_start = time.time()
@@ -464,16 +445,14 @@ def main():
         train_loss, grad_norm, train_l1, train_ssim, train_psnr = train_one_epoch(
             model, train_loader, loss_fn, optimizer, scaler, device, cfg, epoch, logger
         )
-        logger.info(f"Epoch {epoch}/{cfg['epochs']} training summary - Loss: {train_loss:.6f}, L1: {train_l1:.6f}, SSIM: {train_ssim:.4f}, PSNR: {train_psnr:.2f}, Grad Norm: {grad_norm:.4f}")
+        logger.info(f"Epoch {epoch}/{cfg['epochs']} summary - Loss: {train_loss:.6f}, L1: {train_l1:.6f}, SSIM: {train_ssim:.4f}, PSNR: {train_psnr:.2f}, Grad Norm: {grad_norm:.4f}")
 
-        # 验证
         if epoch % cfg['val_interval'] == 0 or epoch == cfg['epochs']:
-            logger.info(f"Epoch {epoch}/{cfg['epochs']} - 开始验证")
+            logger.info(f"Epoch {epoch}/{cfg['epochs']} - 验证")
             val_psnr, val_ssim, val_loss = validate(model, val_loader, device, cfg, loss_fn)
             elapsed = time.time() - epoch_start
             logger.info(f"[Epoch {epoch}/{cfg['epochs']}] Train Loss: {train_loss:.4f}, Val PSNR: {val_psnr:.4f} dB, Val SSIM: {val_ssim:.4f}, Val Loss: {val_loss:.4f}, Time: {elapsed:.1f}s")
 
-            # 早停检查
             if cfg['early_stop']:
                 should_stop = early_stopper(val_psnr)
                 if val_psnr > best_psnr:
@@ -481,10 +460,8 @@ def main():
                     early_stopper.save_best_model(model, optimizer, epoch, os.path.join(exp_dir, 'best_model.pth'))
                     logger.info(f'保存最佳模型，Val PSNR: {val_psnr:.4f} dB')
 
-                logger.info(f"早停状态 - 最佳PSNR: {early_stopper.best_score:.4f}, 停滞计数: {early_stopper.counter}/{cfg['early_stop_patience']}")
-
                 if should_stop:
-                    logger.info(f'Early stopping triggered at epoch {epoch} (best val PSNR: {early_stopper.best_score:.4f} dB)')
+                    logger.info(f'Early stopping at epoch {epoch} (best val PSNR: {early_stopper.best_score:.4f} dB)')
                     break
             else:
                 if val_psnr > best_psnr:
@@ -495,14 +472,11 @@ def main():
             elapsed = time.time() - epoch_start
             logger.info(f"[Epoch {epoch}/{cfg['epochs']}] Train Loss: {train_loss:.4f}, Time: {elapsed:.1f}s")
 
-        # 学习率调度
         current_lr = optimizer.param_groups[0]['lr']
         if scheduler is not None:
             scheduler.step()
             current_lr = optimizer.param_groups[0]['lr']
-            logger.info(f'学习率更新: {current_lr:.6f}')
 
-        # 写入 CSV
         with open(csv_path, 'a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow([
@@ -519,10 +493,8 @@ def main():
                 f"{current_lr:.6f}"
             ])
 
-        # 定期保存 checkpoint
         if epoch % cfg['save_interval'] == 0:
             save_checkpoint(model, optimizer, scheduler, epoch, best_psnr, os.path.join(exp_dir, 'checkpoints', f'epoch_{epoch}.pth'))
-            logger.info(f'保存 checkpoint: epoch_{epoch}.pth')
 
     logger.info(f'Training finished. Best val PSNR: {best_psnr:.4f} dB')
 

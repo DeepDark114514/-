@@ -1,8 +1,3 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.18 (updated: WaveletResUNet -> DegFiLMResUNet)
-# A/B 方案前向传播性能对比基准测试
-# 检测 B 方案是否存在显存泄漏、CPU 占用异常、速度退化
-
 import sys
 sys.path.insert(0, r'D:\biyesheji\DLC\NEW')
 

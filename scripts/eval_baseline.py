@@ -1,14 +1,3 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.14
-# 验证集/测试集基线测评：直接比较 LQ (压缩后输入) 与 HQ (GT) 的 PSNR/SSIM
-# 不经过任何模型，用于后续对比模型提升幅度
-# 用法:
-    # python scripts/eval_baseline.py
-# 输出:
-    # baseline_val.json      - 验证集逐序列基线
-    # baseline_test.json     - 测试集逐序列基线
-    # baseline_summary.json  - 合并摘要
-
 import json
 import torch
 from tqdm import tqdm

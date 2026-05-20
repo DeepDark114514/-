@@ -1,10 +1,3 @@
-# A 方案全面测评脚本
-# - 加载 best_model.pth
-# - 测试集逐帧评估（PSNR / SSIM），不驻留全量图像（避免内存爆炸）
-# - 评估后二次采样生成 LQ / HQ / Pred 可视化对比
-# - 输出全面分析报告
-# 用法:
-    # python scripts/eval_model_A.py --exp_dir logs/A_20260515_002558
 
 import sys
 import os

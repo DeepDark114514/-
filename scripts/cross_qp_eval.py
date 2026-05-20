@@ -1,11 +1,5 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.16
-# 跨QP泛化评估脚本（A方案诊断）
-# 加载QP32训练的A模型，在测试集多个QP上评估，输出退化曲线。
-# 用法:
-  # python scripts/cross_qp_eval.py --model_path checkpoints/best_model.pth --qp_list 22 27 32 37 42 --split test
-
 import os
+
 import sys
 import json
 import csv

@@ -1,17 +1,9 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.13
-# 早停机制：验证集指标连续 N 个周期不提升，自动停止并保存最佳模型
-
 import os
 import torch
 
 
 class EarlyStopping:
     def __init__(self, patience=15, min_delta=0.0, mode='max'):
-        # Args:
-            # patience: 连续多少个 epoch 无提升则停止
-            # min_delta: 提升阈值，小于此值视为无提升
-            # mode: 'max' 表示指标越大越好（如 PSNR），'min' 表示越小越好（如 loss）
         self.patience = patience
         self.min_delta = min_delta
         self.mode = mode
@@ -41,8 +33,7 @@ class EarlyStopping:
 
         return self.early_stop
 
-    def save_best_model(self, model, optimizer, epoch, path='checkpoints/best_model.pth'):
-        # 保存当前最佳模型（应在验证后调用）
+    def save_best_model(self, model, optimizer, epoch, path='checkpoints/best_model.pth'):  # 连optimizer一起存，方便resume
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save({
             'epoch': epoch,
@@ -52,7 +43,6 @@ class EarlyStopping:
         }, path)
 
     def load_best_model(self, model, optimizer=None, path='checkpoints/best_model.pth'):
-        # 加载最佳模型
         if not os.path.exists(path):
             return None
         checkpoint = torch.load(path, map_location='cpu')

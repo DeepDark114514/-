@@ -1,10 +1,3 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.17
-# 多 QP 分层采样数据集（B 方案训练用）
-# 在 MFQEv2Dataset 基础上扩展，训练时随机抽一个 QP 返回，
-# 供训练脚本记录各 QP 的 loss 分布。
-# 总样本数和单 QP 训练一样，不额外占磁盘。
-
 import random
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -12,10 +5,9 @@ from torch.utils.data import Dataset, DataLoader
 from .mfqev2_dataset import MFQEv2Dataset
 
 
+# 多QP训练用，每次随机选一个QP来加载，模拟多压缩强度
 class MultiQPDataset(MFQEv2Dataset):
-    # 多 QP 分层采样数据集
     def __init__(self, root, split, list_file, patch_size=256, mode='train', qp_list=None):
-        # 默认 3 档 QP
         if qp_list is None:
             qp_list = [22, 32, 42]
         super().__init__(root=root, split=split, list_file=list_file,
@@ -26,7 +18,7 @@ class MultiQPDataset(MFQEv2Dataset):
         meta = self.seq_meta[seq_idx]
 
         if self.mode == 'train' and len(self.qp_list) > 1:
-            qp = random.choice(self.qp_list)
+            qp = random.choice(self.qp_list)  # 每个batch随机QP，让B方案学退化自适应
         else:
             qp = self.qp_list[0]
 
@@ -47,7 +39,6 @@ class MultiQPDataset(MFQEv2Dataset):
 
 
 def build_multi_qp_dataloader(cfg: dict, split: str, qp_list=None):
-    # 构建多 QP DataLoader
     is_train = (split == 'train')
     if qp_list is None:
         qp_list = cfg.get('qp_list', [22, 32, 42])

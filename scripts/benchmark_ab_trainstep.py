@@ -1,8 +1,3 @@
-#  南京信息工程大学22级信安1班 202283290014
-# 2026.5.18 (updated: WaveletResUNet -> DegFiLMResUNet)
-# A/B 方案训练步骤性能对比（含 backward）
-# 检测 B 方案是否存在 backward 瓶颈、CPU 占用异常
-
 import sys
 sys.path.insert(0, r'D:\biyesheji\DLC\NEW')
 
