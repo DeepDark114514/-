@@ -1,0 +1,58 @@
+{
+  "split": "val",
+  "total_frames": 3356,
+  "avg_psnr": 32.5373,
+  "avg_ssim": 0.9083,
+  "sequences": {
+    "11skateboarding-15_1920x1080_89": {
+      "psnr": 35.8254,
+      "ssim": 0.8751,
+      "frames": 89
+    },
+    "18ANIMALS-5_1920x1080_288": {
+      "psnr": 32.7653,
+      "ssim": 0.9244,
+      "frames": 288
+    },
+    "football_352x288_260": {
+      "psnr": 30.9334,
+      "ssim": 0.8624,
+      "frames": 260
+    },
+    "hallmonitor_352x288_300": {
+      "psnr": 32.4687,
+      "ssim": 0.9,
+      "frames": 300
+    },
+    "harbour_704x576_600": {
+      "psnr": 31.297,
+      "ssim": 0.9283,
+      "frames": 600
+    },
+    "ice_704x576_480": {
+      "psnr": 35.4472,
+      "ssim": 0.9287,
+      "frames": 480
+    },
+    "LiquidAssets-blackandwhitefish_1920x1080_570": {
+      "psnr": 32.5805,
+      "ssim": 0.902,
+      "frames": 570
+    },
+    "LiquidAssets-eels-original_1920x1080_499": {
+      "psnr": 31.6267,
+      "ssim": 0.9039,
+      "frames": 499
+    },
+    "videoSRC056_640x360_150": {
+      "psnr": 30.8774,
+      "ssim": 0.8833,
+      "frames": 150
+    },
+    "videoSRC199_640x360_120": {
+      "psnr": 33.415,
+      "ssim": 0.9126,
+      "frames": 120
+    }
+  }
+}

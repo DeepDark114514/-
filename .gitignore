@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+
+# Environments
+venv/
+.env/
+*.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & models (large files)
+data/raw/**/*.yuv
+data/processed/**/*.yuv
+data/processed/**/*.bin
+checkpoints/
+logs/
+*.pth
+*.pt
+*.onnx
+*.h5
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# HM build artifacts & source (too large)
+hm/
+result/ab_visualization_v2/
+.playwright-mcp/
+
+# Temporary test files
+test_*.yuv
+test_*.hevc
+test_*.cfg
+test_*.log
+*.bat
+
+# Dataset (too large)
+MFQEv2_processed/

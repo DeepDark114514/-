@@ -1,0 +1,7 @@
+{
+  "split": "test",
+  "total_frames": 7980,
+  "avg_psnr": 31.8246,
+  "avg_ssim": 0.8664,
+  "sequences": {}
+}
