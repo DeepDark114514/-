@@ -16,7 +16,7 @@ CONFIG = {
     'base_ch': 32,             # 基础通道数
                                 # A方案: base_ch=32 时约 12.2M 参数
                                 # B方案: base_ch=32 时约 12.3M 参数 (+0.8%, DegEstimator仅+0.05M)
-                                #       base_ch=64 时约 48M，如需严格 5-15M 请保持 32
+                                #       base_ch=64 时约 48M，如要 5-15M 请保持 32
 
     # 损失函数
     'loss_type': 'L1_SSIM',
@@ -31,11 +31,11 @@ CONFIG = {
     'step_size': 30,
     'gamma': 0.1,
     'epochs': 100,
-    'batch_size': 32,           # RTX 5080 16GB 全力输出
+    'batch_size': 32,           # RTX 5080 16GB
     'patch_size': 256,
-    'num_workers': 6,            # 9800X3D 16线程，Windows 下 6 是稳定与速度的最优平衡点
+    'num_workers': 6,            # Windows 下 6 worker 比较稳定
     'pin_memory': False,        # Windows 保持 False，避免 pin_memory 线程 CUDA 错误
-    'persistent_workers': True,  # Windows: 保持 worker 进程存活，避免每 epoch 重建开销
+    'persistent_workers': True,  # 保持 worker 进程存活，避免每 epoch 重建
     'seed': 42,
     'grad_accum_steps': 1,       # 梯度累积步数，1=关闭累积，bs=16 时等效 batch_size=16
 

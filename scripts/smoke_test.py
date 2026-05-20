@@ -1,6 +1,6 @@
 #  南京信息工程大学22级信安1班 202283290014
 # 2026.5.13
-# 冒烟测试：验证 A/B/C 模型实例化、参数量、forward/backward、显存、损失、早停
+# 冒烟测试：验证 A/B 模型实例化、参数量、forward/backward、显存、损失、早停
 
 import sys
 from pathlib import Path
@@ -120,10 +120,10 @@ def test_loss_fn():
     assert 0 <= loss.item() <= 10, f"Loss 数值不合理: {loss.item()}"
     print(f"  L1_SSIM Loss: {loss.item():.4f}")
 
-    # 完美预测时 loss 应接近 0
+    # 相同输入时 loss 应接近 0
     loss_zero = loss_fn(target, target)
-    print(f"  Perfect prediction loss: {loss_zero.item():.6f}")
-    assert loss_zero.item() < 0.01, "完美预测时 loss 应接近 0"
+    print(f"  Same input loss: {loss_zero.item():.6f}")
+    assert loss_zero.item() < 0.01, "相同输入时 loss 应接近 0"
 
     print("[PASS] 损失函数数值合理\n")
 

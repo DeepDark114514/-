@@ -50,7 +50,7 @@ python train.py --model_type A --base_ch 32 --epochs 100
 ### B 方案（退化感知）
 
 ```bash
-python train_b.py --use_film 1 --base_ch 32 --epochs 100
+python train.py --model_type B --base_ch 32 --epochs 100
 ```
 
 B 方案在 QP32 上训练，混合 QP22/32/42 数据增强泛化能力。
@@ -95,7 +95,7 @@ python scripts/benchmark_ab_trainstep.py
 .
 ├── config.py              # 训练配置
 ├── train.py               # A 方案训练入口
-├── train_b.py             # B 方案训练入口
+├── train.py               # A/B 统一训练入口
 ├── models/
 │   ├── base_unet.py       # U-Net 骨架
 │   ├── pure_resunet.py    # A 方案

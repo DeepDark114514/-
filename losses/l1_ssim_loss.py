@@ -1,7 +1,6 @@
 #  南京信息工程大学22级信安1班 202283290014
 # 2026.5.12
-# A/B/C 共用损失函数，控制变量。
-# B方案的VLM注入不引入LPIPS，只靠Cross-Attention可训练参数 + 统一损失优化。
+# A/B 共用损失函数
 
 import torch
 import torch.nn as nn
@@ -51,7 +50,7 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
 
 
 class L1SSIMLoss(nn.Module):
-    # A/B/C 共用损失函数：L1 + SSIM
+    # L1 + SSIM
     def __init__(self, l1_weight=1.0, ssim_weight=1.0, window_size=11):
         super().__init__()
         self.l1_weight = l1_weight
