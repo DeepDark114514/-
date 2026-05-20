@@ -46,14 +46,6 @@ python scripts/cross_qp_eval.py --model_path logs/xxx/best_model.pth --model_typ
 
 cross_qp_eval 本身就带 baseline 计算，每个 QP 都会算 LQ 输入的 PSNR/SSIM 当基准，所以不需要额外跑 baseline 脚本。
 
-效率测试（可选，论文效率章节的数据来源）：
-```
-python scripts/benchmark_ab_forward.py      # 测 A/B 推理速度和峰值显存
-python scripts/benchmark_ab_trainstep.py    # 测 A/B 训练耗时拆解
-```
-
-result/ 里还有一些历史结果和可视化图（比如 baseline/、ab_visualization_v2/），是之前用旧脚本跑的，现在保留作参考。如果要复现那些可视化对比图，得用本地的辅助脚本，不在仓库里。
-
 几个坑：
 
 - AMP 关的。Pre-Activation ResBlock 在 FP16 下数值会漂移，loss 变 NaN，只能 FP32 训。
