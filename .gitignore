@@ -48,3 +48,6 @@ test_*.log
 
 # Dataset (too large)
 MFQEv2_processed/
+
+# Docs (temporary)
+docs/
