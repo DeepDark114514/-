@@ -96,7 +96,7 @@ def main():
         result = eval_baseline_split(split)
         results[split] = result
 
-        out_file = f'baseline_{split}.json'
+        out_file = f'result/baseline/baseline_{split}.json'
         with open(out_file, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
@@ -108,9 +108,9 @@ def main():
         print()
 
     # 同时保存合并摘要
-    with open('baseline_summary.json', 'w', encoding='utf-8') as f:
+    with open('result/baseline/baseline_summary.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    print("合并摘要已保存: baseline_summary.json")
+    print("合并摘要已保存: result/baseline/baseline_summary.json")
 
 
 if __name__ == '__main__':
