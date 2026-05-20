@@ -4,15 +4,15 @@
 
 A/B 对比实验。A 是基线 PureResUNet，B 加了 DegFiLM 退化感知模块。
 
-数据集是 108 个 YUV 视频序列，自己从 HEVC 标准测试集、Xiph、Netflix Open Content 那些公开数据集里收集的原始 YUV，然后用 HM-16.20 编码器压的。训练集压了 QP22/32/42 三档，测试集压了 QP22/27/32/37/42 五档。
+数据集是 108 个 YUV 视频序列，自己从 HEVC 标准测试集、Xiph、Netflix Open Content 那些公开数据集里收集的原始 YUV，然后用 ffmpeg + libx265 压的。训练集压了 QP22/32/42 三档，测试集压了 QP22/27/32/37/42 五档。
 
-HM-16.20 下载地址：https://vcgit.hhi.fraunhofer.de/jct-vc/HM/-/tags/ 找 HM-16.20
+没用 HM 参考软件，因为 ffmpeg 快很多，压 108 个视频省大量时间。而且深度学习训练对编码器细节不敏感，libx265 和 HM 压出来的伪影分布足够接近，对最终模型性能影响不大。
 
 编码命令示例（QP32）：
 ```
-TAppEncoder.exe -c configs/encoder_ldp_template.cfg -c configs/test_seq_BasketballPass.cfg -q 32
+ffmpeg -f rawvideo -pix_fmt yuv420p -s 416x240 -r 50 -i input.yuv -c:v libx265 -x265-params "qp=32" -f rawvideo -pix_fmt yuv420p output_qp32.yuv
 ```
-训练集压 22/32/42，测试集压 22/27/32/37/42。LDP 配置， GOP=4，CQP 模式。
+训练集压 22/32/42，测试集压 22/27/32/37/42。
 
 压完之后的目录结构要像这样，代码才能读到：
 ```
