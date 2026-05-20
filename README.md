@@ -2,113 +2,42 @@
 
 202283290014
 
-A/B 方案对比实验：基线 PureResUNet vs 退化感知 DegFiLM-ResUNet。
+A/B 方案对比实验。A 是基线 PureResUNet，B 加了 DegFiLM 退化感知模块。
 
-## 数据集
+数据集是 MFQEv2，从 HEVC 参考数据集来的，一共 108 个视频序列。自己用 HM-16.20 编码器压了 QP22/27/32/37/42 五档。
 
-**MFQEv2**（Multi-format Video Quality Enhancement）
-
-- 来源：CVPR 2019 工作，包含 108 个未压缩视频序列
-- 训练集：98 序列 | 验证集：10 序列 | 测试集：18 序列
-- 分辨率覆盖：416x240 ~ 2560x1600
-
-### 数据预处理
-
-用 HM-16.20 编码器生成压缩序列：
+预处理：
 
 ```bash
-# 生成 QP22/27/32/37/42 的压缩 YUV
 python scripts/preprocess_multi_qp.py --input_dir MFQEv2_raw --output_dir MFQEv2_processed
 ```
 
-处理流程：
-- 原始 YUV -> HM 编码（LDP 配置，指定 QP）-> 解码回 YUV
-- 输出结构：`compressed/{split}/seq_name_qp{qp}.yuv` 与 `gt/{split}/seq_name.yuv`
-
-## 本地配置
-
-测试环境：
-- GPU：NVIDIA GeForce RTX 5080 16GB
-- CPU：AMD Ryzen 7 9800X3D
-- OS：Windows 11
-- Python 3.10 + PyTorch 2.x
-
-安装依赖：
+环境就是 Windows + PyTorch，依赖装一下：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 训练
-
-### A 方案（基线）
+训练：
 
 ```bash
-python train.py --model_type A --base_ch 32 --epochs 100
+python train.py --model_type A --epochs 100   # A 方案
+python train.py --model_type B --epochs 100   # B 方案
 ```
 
-### B 方案（退化感知）
+B 方案训练时会混合 QP22/32/42 的数据，A 方案固定 QP32。其他参数在 config.py 里改，比如 batch_size、lr 这些。
+
+评估：
 
 ```bash
-python train.py --model_type B --base_ch 32 --epochs 100
-```
-
-B 方案在 QP32 上训练，混合 QP22/32/42 数据增强泛化能力。
-
-训练配置（config.py 关键项）：
-- loss：L1 + SSIM，权重 1.0+1.0
-- optimizer：Adam，lr=1e-4
-- batch_size：32，patch_size：256
-- early_stop：patience=6，监控 val_psnr
-- 精度：FP32（AMP 关闭，避免 Pre-Activation ResBlock 数值漂移）
-
-## 评估
-
-### 跨 QP 泛化评估
-
-```bash
-# A 方案
-python scripts/cross_qp_eval.py --model_path checkpoints/best_model.pth --model_type A --qp_list 22 27 32 37 42 --split test
-
-# B 方案
-python scripts/cross_qp_eval.py --model_path logs/B_20260519_121523/best_model.pth --model_type B --qp_list 22 27 32 37 42 --split test --out_dir result/cross_qp/B_20260519_121523
-```
-
-### A/B 对比汇总
-
-```bash
+python scripts/cross_qp_eval.py --model_path logs/xxx/best_model.pth --model_type A --qp_list 22 27 32 37 42
 python scripts/compare_ab_cross_qp.py
 ```
 
-输出对比图表和 CSV 到 `result/cross_qp/B_20260519_121523/`。
+几个坑：
 
-### 效率基准
+- AMP 默认关的。Pre-Activation ResBlock 在 FP16 下会 NaN，只能 FP32 训。
+- Windows 上 pin_memory 也关掉了，不然 DataLoader 容易报错。
+- cuDNN benchmark 开了，输入尺寸固定的时候有加速。
 
-```bash
-python scripts/benchmark_ab_forward.py
-python scripts/benchmark_ab_trainstep.py
-```
-
-## 项目结构
-
-```
-.
-├── config.py              # 训练配置
-├── train.py               # A 方案训练入口
-├── train.py               # A/B 统一训练入口
-├── models/
-│   ├── base_unet.py       # U-Net 骨架
-│   ├── pure_resunet.py    # A 方案
-│   ├── degfilm_resunet.py # B 方案
-│   └── deg_film_blocks.py # DegEstimator + FiLM
-├── datasets/              # 数据加载与 YUV IO
-├── losses/                # L1 + SSIM
-├── utils/                 # 早停、指标、优先级
-├── scripts/               # 评估、对比、可视化
-├── docs/                  # 技术文档
-└── result/                # 评估结果
-```
-
-## 核心结论
-
-B 方案以 2.3% 参数增量，在低压缩 QP（22/27）下实现 6~11% 相对增益，高 QP（42）与 A 基本持平。说明通道级 FiLM 的调节粒度在轻度失真域有效，重度失真域已接近架构瓶颈。
+项目结构没什么特别的，模型在 models/，数据加载在 datasets/，训练入口就一个 train.py。结果和可视化在 result/ 里。
