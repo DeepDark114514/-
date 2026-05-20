@@ -36,7 +36,7 @@ pip install -r requirements.txt
 python train.py -m A --epochs 100
 python train.py -m B --epochs 100
 ```
-A 训练用 QP32，B 训练混着 QP22/32/42，因为 B 要做退化感知。其他参数在 config.py 里改，比如 batch_size、lr。
+A 和 B 训练集一样，都是混合 QP22/32/42。区别是 B 加了 DegFiLM 退化感知模块，A 没有。其他参数在 config.py 里改，比如 batch_size、lr。
 
 评估：
 ```

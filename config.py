@@ -45,6 +45,6 @@ CONFIG = {
     'train_list': 'train_list.txt',
     'val_list': 'val_list.txt',
     'test_list': 'test_list.txt',
-    'qp': 32,
+    'qp': 32,  # 验证/测试基准QP，训练时A和B都用qp_list
     'qp_list': [22, 32, 42],
 }

@@ -82,8 +82,14 @@ def build_dataloader_for_split(cfg, split):
             qp_list = cfg.get('qp', 32)
         return build_multi_qp_dataloader(cfg, split, qp_list=qp_list)
     else:
-        qp = cfg.get('qp', 32)
-        return build_dataloader(cfg, split, qp=qp)
+        if is_train:
+            # A方案训练也用混合QP，和B训练集相同
+            from datasets.multi_qp_dataset import build_multi_qp_dataloader
+            qp_list = cfg.get('qp_list', [22, 32, 42])
+            return build_multi_qp_dataloader(cfg, split, qp_list=qp_list)
+        else:
+            qp = cfg.get('qp', 32)
+            return build_dataloader(cfg, split, qp=qp)
 
 
 def build_optimizer_scheduler(model, cfg):
