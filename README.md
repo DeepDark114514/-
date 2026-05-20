@@ -41,11 +41,18 @@ A 训练用 QP32，B 训练混着 QP22/32/42，因为 B 要做退化感知。其
 评估：
 ```
 python scripts/cross_qp_eval.py --model_path logs/xxx/best_model.pth --model_type A --qp_list 22 27 32 37 42
-python scripts/eval_baseline.py
-python scripts/eval_model_A.py --exp_dir logs/xxx
+```
+跑完会在 result/cross_qp/ 里输出 JSON、CSV 和几张退化曲线图（PSNR/SSIM 退化曲线、增益对比图、增益波动图）。这就是论文里跨 QP 泛化性能的数据来源。
+
+cross_qp_eval 本身就带 baseline 计算，每个 QP 都会算 LQ 输入的 PSNR/SSIM 当基准，所以不需要额外跑 baseline 脚本。
+
+效率测试（可选，论文效率章节的数据来源）：
+```
+python scripts/benchmark_ab_forward.py      # 测 A/B 推理速度和峰值显存
+python scripts/benchmark_ab_trainstep.py    # 测 A/B 训练耗时拆解
 ```
 
-cross_qp_eval 是核心评估脚本，跑跨 QP 泛化。eval_baseline 算压缩后 LQ 的 baseline 指标，论文里提升多少 dB 就靠它当基准。eval_model_A 是 test set 全面测评，逐帧算 PSNR/SSIM，结果存 JSON。
+result/ 里还有一些历史结果和可视化图（比如 baseline/、ab_visualization_v2/），是之前用旧脚本跑的，现在保留作参考。如果要复现那些可视化对比图，得用本地的辅助脚本，不在仓库里。
 
 几个坑：
 
@@ -53,4 +60,4 @@ cross_qp_eval 是核心评估脚本，跑跨 QP 泛化。eval_baseline 算压缩
 - Windows 上 pin_memory 关掉。Windows 多进程机制跟 Linux 不一样，开 true DataLoader 容易死锁报错。
 - cuDNN benchmark 开了。输入尺寸固定（256x256 patch）时 PyTorch 会自动选最快的卷积算法，训练速度能快一点。
 
-项目结构没什么特别的，模型在 models/，数据加载在 datasets/，训练入口就一个 train.py。结果和可视化在 result/ 里。
+项目结构没什么特别的，模型在 models/，数据加载在 datasets/，训练入口就一个 train.py。
