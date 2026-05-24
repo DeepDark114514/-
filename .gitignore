@@ -20,7 +20,8 @@ data/raw/**/*.yuv
 data/processed/**/*.yuv
 data/processed/**/*.bin
 checkpoints/
-logs/
+logs/**/*.pth
+logs/**/checkpoints/
 *.pth
 *.pt
 *.onnx

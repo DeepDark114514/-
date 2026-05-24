@@ -1,0 +1,14 @@
+2026-05-14 22:36:15,980 - INFO - 开始训练方案: A
+2026-05-14 22:36:15,981 - INFO - 配置: {'model_type': 'A', 'base_ch': 32, 'loss_type': 'L1_SSIM', 'l1_weight': 1.0, 'ssim_weight': 1.0, 'optimizer': 'Adam', 'lr': 0.0001, 'weight_decay': 0, 'scheduler': 'StepLR', 'step_size': 30, 'gamma': 0.1, 'epochs': 100, 'batch_size': 32, 'patch_size': 256, 'num_workers': 6, 'pin_memory': False, 'persistent_workers': True, 'seed': 42, 'grad_accum_steps': 1, 'early_stop': True, 'early_stop_patience': 3, 'early_stop_min_delta': 0.0, 'early_stop_monitor': 'val_psnr', 'early_stop_mode': 'max', 'val_interval': 5, 'test_interval': 50, 'save_interval': 10, 'clip_grad_norm': 1.0, 'device': 'cuda', 'amp': False, 'pred_clamp': False, 'dataset_root': 'D:\\biyesheji\\DLC\\NEW\\MFQEv2_processed', 'root': 'D:\\biyesheji\\DLC\\NEW\\MFQEv2_processed', 'train_list': 'train_list.txt', 'val_list': 'val_list.txt', 'test_list': 'test_list.txt', 'qp': 32}
+2026-05-14 22:36:15,981 - INFO - 设备: cuda
+2026-05-14 22:36:15,981 - INFO - cuDNN benchmark: enabled
+2026-05-14 22:36:15,982 - INFO - GPU: NVIDIA GeForce RTX 5080
+2026-05-14 22:36:15,982 - INFO - 显存: 17.1 GB
+2026-05-14 22:36:16,155 - INFO - 模型参数量: 12,158,144 (12.16M)
+2026-05-14 22:36:16,155 - INFO - torch.compile: skipped (triton not available on Windows)
+2026-05-14 22:36:17,090 - INFO - 优化器: Adam, lr=0.0001, scheduler=StepLR
+2026-05-14 22:36:17,108 - INFO - Train batches: 1087, Val sequences: 3356, Test sequences: 7980
+2026-05-14 22:36:17,109 - INFO - 早停 patience=3, min_delta=0.0, mode=max
+2026-05-14 22:36:36,625 - INFO - Epoch 1/100, Batch 1/1087, Loss: 1.6864
+2026-05-14 22:37:00,884 - INFO - Epoch 1/100, Batch 51/1087, Loss: 0.2820
+2026-05-14 22:37:23,395 - INFO - Epoch 1/100, Batch 101/1087, Loss: 0.2466
